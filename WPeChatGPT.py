@@ -9,6 +9,10 @@ import threading
 import json
 import sys, os
 
+PLUGIN_NAME='WPEChatGPT'
+PROD_NAME='ChatGPT'
+MODEL = 'gpt-3.5-turbo'
+
 # Windows
 path = os.path.dirname(os.path.abspath(__file__)) + "\\Auto-WPeGPT_WPeace\\"
 # MacOS
@@ -37,9 +41,9 @@ class ExplainHandler(idaapi.action_handler_t):
         funcComment = getFuncComment(idaapi.get_screen_ea())
         if "---GPT_START---" in funcComment:
             if ZH_CN:
-                print("当前函数已经完成过 WPeChatGPT:Explain 分析，请查看注释或删除注释重新分析。@WPeace")
+                print("当前函数已经完成过 %s:Explain 分析，请查看注释或删除注释重新分析。@WPeace"%(PLUGIN_NAME))
             else:
-                print("The current function has been analyzed by WPeChatGPT:Explain, please check the comment or delete the comment to re-analyze. @WPeace")
+                print("The current function has been analyzed by %s:Explain, please check the comment or delete the comment to re-analyze. @WPeace"%(PLUGIN_NAME))
             return 0
         decompiler_output = ida_hexrays.decompile(idaapi.get_screen_ea())
         v = ida_hexrays.get_widget_vdui(ctx.widget)
@@ -91,9 +95,9 @@ class PythonHandler(idaapi.action_handler_t):
         addrComment = getAddrComment(lastAddr)
         if "---GPT_Python_START---" in str(addrComment):
             if ZH_CN:
-                print("当前函数已经完成过 WPeChatGPT:Python 分析，请查看注释或删除注释重新分析。@WPeace")
+                print("当前函数已经完成过 %s:Python 分析，请查看注释或删除注释重新分析。@WPeace"%(PLUGIN_NAME))
             else:
-                print("The current function has been analyzed by WPeChatGPT:Python, please check the comment or delete the comment to re-analyze. @WPeace")
+                print("The current function has been analyzed by %s:Python, please check the comment or delete the comment to re-analyze. @WPeace"%(PLUGIN_NAME))
             return 0
         decompiler_output = ida_hexrays.decompile(idaapi.get_screen_ea())
         v = ida_hexrays.get_widget_vdui(ctx.widget)
@@ -124,9 +128,9 @@ class FindVulnHandler(idaapi.action_handler_t):
         funcComment = getFuncComment(idaapi.get_screen_ea())
         if "---GPT_VulnFinder_START---" in funcComment:
             if ZH_CN:
-                print("当前函数已经完成过 WPeChatGPT:VulnFinder 分析，请查看注释或删除注释重新分析。@WPeace")
+                print("当前函数已经完成过 %s:VulnFinder 分析，请查看注释或删除注释重新分析。@WPeace"%(PLUGIN_NAME))
             else:
-                print("The current function has been analyzed by WPeChatGPT:VulnFinder, please check the comment or delete the comment to re-analyze. @WPeace")
+                print("The current function has been analyzed by %s:VulnFinder, please check the comment or delete the comment to re-analyze. @WPeace"%(PLUGIN_NAME))
             return 0
         decompiler_output = ida_hexrays.decompile(idaapi.get_screen_ea())
         v = ida_hexrays.get_widget_vdui(ctx.widget)
@@ -157,9 +161,9 @@ class expCreateHandler(idaapi.action_handler_t):
         funcComment = getFuncComment(idaapi.get_screen_ea())
         if "---GPT_VulnPython_START---" in funcComment:
             if ZH_CN:
-                print("当前函数已经完成过 WPeChatGPT:ExpCreater 分析，请查看注释或删除注释重新分析。@WPeace")
+                print("当前函数已经完成过 %s:ExpCreater 分析，请查看注释或删除注释重新分析。@WPeace"%(PLUGIN_NAME))
             else:
-                print("The current function has been analyzed by WPeChatGPT:ExpCreater, please check the comment or delete the comment to re-analyze. @WPeace")
+                print("The current function has been analyzed by %s:ExpCreater, please check the comment or delete the comment to re-analyze. @WPeace"%(PLUGIN_NAME))
             return 0
         decompiler_output = ida_hexrays.decompile(idaapi.get_screen_ea())
         v = ida_hexrays.get_widget_vdui(ctx.widget)
@@ -193,7 +197,7 @@ def autoChatFunc(funcTree:str, strings:str, callback):
     else:
         messages.append({"role": "user", "content": "Combining the function call structure of the program and the strings it contains, guess its purpose and function."})
         messages.append({"role": "user", "content": "Please tell me the purpose and general function of the program after careful analysis."})
-    t = threading.Thread(target=chat_api_worker, args=(messages, "gpt-3.5-turbo", callback))
+    t = threading.Thread(target=chat_api_worker, args=(messages, MODEL, callback))
     t.start()
 
 
@@ -271,7 +275,7 @@ def query_model(query, cb, max_tokens=2500):
     """
     try:
         response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
+            model=MODEL,
             messages=[
                 {"role": "user", "content": query}
             ]
@@ -282,19 +286,19 @@ def query_model(query, cb, max_tokens=2500):
         m = re.search(r'maximum context length is (\d+) tokens, however you requested \d+ tokens \((\d+) in your '
                       r'prompt;', str(e))
         if not m:
-            print(f"gpt-3.5-turbo could not complete the request: {str(e)}")
+            print(f"{MODEL} could not complete the request: {str(e)}")
             return
         (hard_limit, prompt_tokens) = (int(m.group(1)), int(m.group(2)))
         max_tokens = hard_limit - prompt_tokens
         if max_tokens >= 750:
-            print(f"WPeChatGPT-Warning: Context length too long! Try reducing tokens to {max_tokens}...")
-            print("Request to gpt-3.5-turbo sent retried...")
+            print(f"{PLUGIN_NAME}-Warning: Context length too long! Try reducing tokens to {max_tokens}...")
+            print("Request to %s sent retried..."%(MODEL))
             query_model(query, cb, max_tokens)
         else:
-            print("Unfortunately, this function is too large to be analyzed using ChatGPT-gpt-3.5-turbo API. @WPeace")
+            print(f"Unfortunately, this function is too large to be analyzed using {PROD_NAME}-{MODEL} API. @WPeace")
     except openai.OpenAIError as e:
         if "That model is currently overloaded with other requests" in str(e) or "Request timed out" in str(e):
-            print("ChatGPT-gpt-3.5-turbo API 繁忙，请稍后重试或检查代理。@WPeace")
+            print(f"{PROD_NAME}-{MODEL} API 繁忙，请稍后重试或检查代理。@WPeace")
         elif "Cannot connect to proxy" in str(e):
             print("代理出现问题，请稍后重试或检查代理。@WPeace")
         else:
@@ -313,15 +317,15 @@ def query_model_async(query, cb, time):
     """
     if time == 0:
         if ZH_CN:
-            print("正在发送 ChatGPT-gpt-3.5-turbo API 请求，完成后将输出提示。@WPeace")
+            print(f"正在发送 {PROD_NAME}-{MODEL} API 请求，完成后将输出提示。@WPeace")
         else:
-            print("Sending ChatGPT-gpt-3.5-turbo API request, will output a prompt when completed. @WPeace")
-        print("Request to gpt-3.5-turbo sent...")
+            print(f"Sending {PROD_NAME}-{MODEL} API request, will output a prompt when completed. @WPeace")
+        print("Request to %s sent..."%(MODEL))
     else:
         if ZH_CN:
-            print("正在重新发送 ChatGPT-gpt-3.5-turbo API 请求。@WPeace")
+            print(f"正在重新发送 {PROD_NAME}-{MODEL} API 请求。@WPeace")
         else:
-            print("Resending ChatGPT-gpt-3.5-turbo API request. @WPeace")
+            print(f"Resending {PROD_NAME}-{MODEL} API request. @WPeace")
     t = threading.Thread(target=query_model, args=[query, cb])
     t.start()
 
@@ -343,27 +347,27 @@ def comment_callback(address, view, response, cmtFlag, printFlag):
     # Refresh the window so the comment is displayed properly
     if view:
         view.refresh_view(False)
-    print("gpt-3.5-turbo query finished!")
+    print("%s query finished!"%(MODEL))
     if printFlag == 0:
         if ZH_CN:
-            print("WPeChatGPT:Explain 完成分析，已对函数 %s 进行注释。@WPeace" %idc.get_func_name(address))
+            print("%s:Explain 完成分析，已对函数 %s 进行注释。@WPeace" %(PLUGIN_NAME, idc.get_func_name(address)))
         else:
-            print("WPeChatGPT:Explain finished analyzing, function %s has been commented. @WPeace" %idc.get_func_name(address))
+            print("%s:Explain finished analyzing, function %s has been commented. @WPeace" %(PLUGIN_NAME, idc.get_func_name(address)))
     elif printFlag == 1:
         if ZH_CN:
-            print("WPeChatGPT:Python 完成分析，已在函数末尾地址 %s 汇编处进行注释。@WPeace" %hex(address))
+            print("%s:Python 完成分析，已在函数末尾地址 %s 汇编处进行注释。@WPeace"%(PLUGIN_NAME, hex(address)))
         else:
-            print("WPeChatGPT:Python finished parsing, commented at assembly at address %s at end of function. @WPeace" %hex(address))
+            print("%s:Python finished parsing, commented at assembly at address %s at end of function. @WPeace" %(PLUGIN_NAME, hex(address)))
     elif printFlag == 2:
         if ZH_CN:
-            print("WPeChatGPT:VulnFinder 完成分析，已对函数 %s 进行注释。@WPeace" %idc.get_func_name(address))
+            print("%s:VulnFinder 完成分析，已对函数 %s 进行注释。@WPeace" %(PLUGIN_NAME, idc.get_func_name(address)))
         else:
-            print("WPeChatGPT: VulnFinder finished analyzing, function %s has been annotated. @WPeace" %idc.get_func_name(address))
+            print("%s: VulnFinder finished analyzing, function %s has been annotated. @WPeace" %(PLUGIN_NAME, idc.get_func_name(address)))
     elif printFlag == 3:
         if ZH_CN:
-            print("WPeChatGPT:ExpCreater 完成分析，已对函数 %s 进行注释。@WPeace" %idc.get_func_name(address))
+            print("%s:ExpCreater 完成分析，已对函数 %s 进行注释。@WPeace" %(PLUGIN_NAME, idc.get_func_name(address)))
         else:
-            print("WPeChatGPT:ExpCreater finished analyzing, commented on function %s. @WPeace" %idc.get_func_name(address))
+            print("%s:ExpCreater finished analyzing, commented on function %s. @WPeace" %(PLUGIN_NAME, idc.get_func_name(address)))
 
 
 # Gepetto rename_callback Method
@@ -378,7 +382,7 @@ def rename_callback(address, view, response, retries=0):
     j = re.search(r"\{[^}]*?\}", response)
     if not j:
         if retries >= 3:  # Give up obtaining the JSON after 3 times.
-            print("ChatGPT-gpt-3.5-turbo API has no valid response, please try again later. @WPeace")
+            print(f"{PROD_NAME}-{MODEL} API has no valid response, please try again later. @WPeace")
             return
         print(f"Cannot extract valid JSON from the response. Asking the model to fix it...")
         query_model_async("The JSON document provided in this response is invalid. Can you fix it?\n" + response,
@@ -392,7 +396,7 @@ def rename_callback(address, view, response, retries=0):
         names = json.loads(j.group(0))
     except json.decoder.JSONDecodeError:
         if retries >= 3:  # Give up fixing the JSON after 3 times.
-            print("ChatGPT-gpt-3.5-turbo API has no valid response, please try again later. @WPeace")
+            print(f"{PROD_NAME}-{MODEL} API has no valid response, please try again later. @WPeace")
             return
         print(f"The JSON document returned is invalid. Asking the model to fix it...")
         query_model_async("Please fix the following JSON document:\n" + j.group(0),
@@ -418,11 +422,11 @@ def rename_callback(address, view, response, retries=0):
     # Refresh the window to show the new names
     if view:
         view.refresh_view(True)
-    print("gpt-3.5-turbo query finished!")
+    print("%s query finished!"%(MODEL))
     if ZH_CN:
-        print(f"WPeChatGPT:RenameVariable 完成分析，已重命名{len(replaced)}个变量。@WPeace")
+        print(f"{PLUGIN_NAME}:RenameVariable 完成分析，已重命名{len(replaced)}个变量。@WPeace")
     else:
-        print(f"WPeChatGPT:RenameVariable Completed analysis, renamed {len(replaced)} variables. @WPeace")
+        print(f"{PLUGIN_NAME}:RenameVariable Completed analysis, renamed {len(replaced)} variables. @WPeace")
 
 
 # 获取函数注释
@@ -444,29 +448,29 @@ def getAddrComment(address):
 # Add context menu actions
 class ContextMenuHooks(idaapi.UI_Hooks):
     def finish_populating_widget_popup(self, form, popup):
-        idaapi.attach_action_to_popup(form, popup, myplugin_WPeChatGPT.explain_action_name, "WPeChatGPT/")
-        idaapi.attach_action_to_popup(form, popup, myplugin_WPeChatGPT.rename_action_name, "WPeChatGPT/")
-        idaapi.attach_action_to_popup(form, popup, myplugin_WPeChatGPT.python_action_name, "WPeChatGPT/")
-        idaapi.attach_action_to_popup(form, popup, myplugin_WPeChatGPT.vulnFinder_action_name, "WPeChatGPT/")
-        idaapi.attach_action_to_popup(form, popup, myplugin_WPeChatGPT.expPython_action_name, "WPeChatGPT/")
+        idaapi.attach_action_to_popup(form, popup, myplugin_WPeChatGPT.explain_action_name, "%s/"%(PLUGIN_NAME))
+        idaapi.attach_action_to_popup(form, popup, myplugin_WPeChatGPT.rename_action_name, "%s/"%(PLUGIN_NAME))
+        idaapi.attach_action_to_popup(form, popup, myplugin_WPeChatGPT.python_action_name, "%s/"%(PLUGIN_NAME))
+        idaapi.attach_action_to_popup(form, popup, myplugin_WPeChatGPT.vulnFinder_action_name, "%s/"%(PLUGIN_NAME))
+        idaapi.attach_action_to_popup(form, popup, myplugin_WPeChatGPT.expPython_action_name, "%s/"%(PLUGIN_NAME))
 
 
 class myplugin_WPeChatGPT(idaapi.plugin_t):
-    autoWPeGPT_action_name = "WPeChatGPT:Auto-WPeGPT"
-    autoWPeGPT_menu_path = "Edit/WPeChatGPT/Auto-WPeGPT/Auto-WPeGPT v0.2"
-    explain_action_name = "WPeChatGPT:Explain_Function"
-    explain_menu_path = "Edit/WPeChatGPT/函数分析"
-    rename_action_name = "WPeChatGPT:Rename_Function"
-    rename_menu_path = "Edit/WPeChatGPT/重命名函数变量"
-    python_action_name = "WPeChatGPT:Python_Function"
-    python_menu_path = "Edit/WPeChatGPT/Python还原此函数"
-    vulnFinder_action_name = "WPeChatGPT:VulnFinder_Function"
-    vulnFinder_menu_path = "Edit/WPeChatGPT/二进制漏洞查找"
-    expPython_action_name = "WPeChatGPT:VulnPython_Function"
-    expPython_menu_path = "Edit/WPeChatGPT/尝试生成Exploit"
-    wanted_name = 'WPeChatGPT'
+    autoWPeGPT_action_name = "%s:Auto-WPeGPT"%(PLUGIN_NAME)
+    autoWPeGPT_menu_path = "Edit/%s/Auto-WPeGPT/Auto-WPeGPT v0.2"%(PLUGIN_NAME)
+    explain_action_name = "%s:Explain_Function"%(PLUGIN_NAME)
+    explain_menu_path = "Edit/%s/函数分析"%(PLUGIN_NAME)
+    rename_action_name = "%s:Rename_Function"%(PLUGIN_NAME)
+    rename_menu_path = "Edit/%s/重命名函数变量"%(PLUGIN_NAME)
+    python_action_name = "%s:Python_Function"%(PLUGIN_NAME)
+    python_menu_path = "Edit/%s/Python还原此函数"%(PLUGIN_NAME)
+    vulnFinder_action_name = "%s:VulnFinder_Function"%(PLUGIN_NAME)
+    vulnFinder_menu_path = "Edit/%s/二进制漏洞查找"%(PLUGIN_NAME)
+    expPython_action_name = "%s:VulnPython_Function"%(PLUGIN_NAME)
+    expPython_menu_path = "Edit/%s/尝试生成Exploit"%(PLUGIN_NAME)
+    wanted_name = PLUGIN_NAME
     wanted_hotkey = ''
-    comment = "WPeChatGPT Plugin for IDA"
+    comment = "%s Plugin for IDA"%(PLUGIN_NAME)
     help = "Find more information at https://github.com/wpeace-hch"
     menu = None
     flags = 0
@@ -480,7 +484,7 @@ class myplugin_WPeChatGPT(idaapi.plugin_t):
                                                   '二进制文件自动化分析 v0.2',
                                                   autoHandler(),
                                                   "",
-                                                  '使用 gpt-3.5-turbo 对二进制文件进行自动化分析',
+                                                  "使用 %s 对二进制文件进行自动化分析"%(MODEL),
                                                   199)
             idaapi.register_action(autoWPeGPT_action)
             idaapi.attach_action_to_menu(self.autoWPeGPT_menu_path, self.autoWPeGPT_action_name, idaapi.SETMENU_APP)
@@ -489,7 +493,7 @@ class myplugin_WPeChatGPT(idaapi.plugin_t):
                                                   '函数分析',
                                                   ExplainHandler(),
                                                   "Ctrl+Alt+G",
-                                                  '使用 gpt-3.5-turbo 分析当前函数',
+                                                  "使用 %s 分析当前函数"%(MODEL),
                                                   199)
             idaapi.register_action(explain_action)
             idaapi.attach_action_to_menu(self.explain_menu_path, self.explain_action_name, idaapi.SETMENU_APP)
@@ -498,7 +502,7 @@ class myplugin_WPeChatGPT(idaapi.plugin_t):
                                                  '重命名函数变量',
                                                  RenameHandler(),
                                                  "Ctrl+Alt+R",
-                                                 "使用 gpt-3.5-turbo 重命名当前函数的变量",
+                                                 "使用 %s 重命名当前函数的变量"%(MODEL),
                                                  199)
             idaapi.register_action(rename_action)
             idaapi.attach_action_to_menu(self.rename_menu_path, self.rename_action_name, idaapi.SETMENU_APP)
@@ -507,7 +511,7 @@ class myplugin_WPeChatGPT(idaapi.plugin_t):
                                                  'Python还原此函数',
                                                  PythonHandler(),
                                                  "",
-                                                 "使用 gpt-3.5-turbo 分析当前函数并用python3还原",
+                                                 "使用 %s 分析当前函数并用python3还原"%(MODEL),
                                                  199)
             idaapi.register_action(python_action)
             idaapi.attach_action_to_menu(self.python_menu_path, self.python_action_name, idaapi.SETMENU_APP)
@@ -516,7 +520,7 @@ class myplugin_WPeChatGPT(idaapi.plugin_t):
                                                   '二进制漏洞查找',
                                                   FindVulnHandler(),
                                                   "Ctrl+Alt+E",
-                                                  '使用 gpt-3.5-turbo 在当前函数中查找漏洞',
+                                                  "使用 %s 在当前函数中查找漏洞"%(MODEL),
                                                   199)
             idaapi.register_action(vulnFinder_action)
             idaapi.attach_action_to_menu(self.vulnFinder_menu_path, self.vulnFinder_action_name, idaapi.SETMENU_APP)
@@ -525,7 +529,7 @@ class myplugin_WPeChatGPT(idaapi.plugin_t):
                                                   '尝试生成Exploit',
                                                   expCreateHandler(),
                                                   "",
-                                                  '使用 gpt-3.5-turbo 尝试对漏洞函数生成EXP',
+                                                  "使用 %s 尝试对漏洞函数生成EXP"%(MODEL),
                                                   199)
             idaapi.register_action(expPython_action)
             idaapi.attach_action_to_menu(self.expPython_menu_path, self.expPython_action_name, idaapi.SETMENU_APP)
@@ -533,14 +537,14 @@ class myplugin_WPeChatGPT(idaapi.plugin_t):
             self.menu = ContextMenuHooks()
             self.menu.hook()
             print("Auto-WPeGPT v0.2 is ready.")
-            print("WPeChatGPT v2.4 works fine! :)@WPeace\n")
+            print("%s v2.4 works fine! :)@WPeace\n"%(PLUGIN_NAME))
         else:
             # create Auto-WPeGPT action
             autoWPeGPT_action = idaapi.action_desc_t(self.autoWPeGPT_action_name,
                                                   'Automated analysis v0.2',
                                                   autoHandler(),
                                                   "",
-                                                  '使用 gpt-3.5-turbo 对二进制文件进行自动化分析',
+                                                  "使用 %s 对二进制文件进行自动化分析"%(MODEL),
                                                   199)
             idaapi.register_action(autoWPeGPT_action)
             idaapi.attach_action_to_menu(self.autoWPeGPT_menu_path, self.autoWPeGPT_action_name, idaapi.SETMENU_APP)
@@ -549,7 +553,7 @@ class myplugin_WPeChatGPT(idaapi.plugin_t):
                                                   'Function analysis',
                                                   ExplainHandler(),
                                                   "Ctrl+Alt+G",
-                                                  '使用 gpt-3.5-turbo 分析当前函数',
+                                                  "使用 %s 分析当前函数"%(MODEL),
                                                   199)
             idaapi.register_action(explain_action)
             idaapi.attach_action_to_menu(self.explain_menu_path, self.explain_action_name, idaapi.SETMENU_APP)
@@ -558,7 +562,7 @@ class myplugin_WPeChatGPT(idaapi.plugin_t):
                                                  'Rename function variables',
                                                  RenameHandler(),
                                                  "Ctrl+Alt+R",
-                                                 "使用 gpt-3.5-turbo 重命名当前函数的变量",
+                                                 "使用 %s 重命名当前函数的变量"%(MODEL),
                                                  199)
             idaapi.register_action(rename_action)
             idaapi.attach_action_to_menu(self.rename_menu_path, self.rename_action_name, idaapi.SETMENU_APP)
@@ -567,7 +571,7 @@ class myplugin_WPeChatGPT(idaapi.plugin_t):
                                                  'Python restores this function',
                                                  PythonHandler(),
                                                  "",
-                                                 "使用 gpt-3.5-turbo 分析当前函数并用python3还原",
+                                                 "使用 %s 分析当前函数并用python3还原"%(MODEL),
                                                  199)
             idaapi.register_action(python_action)
             idaapi.attach_action_to_menu(self.python_menu_path, self.python_action_name, idaapi.SETMENU_APP)
@@ -576,7 +580,7 @@ class myplugin_WPeChatGPT(idaapi.plugin_t):
                                                   'Vulnerability finding',
                                                   FindVulnHandler(),
                                                   "Ctrl+Alt+E",
-                                                  '使用 gpt-3.5-turbo 在当前函数中查找漏洞',
+                                                  "使用 %s 在当前函数中查找漏洞"%(MODEL),
                                                   199)
             idaapi.register_action(vulnFinder_action)
             idaapi.attach_action_to_menu(self.vulnFinder_menu_path, self.vulnFinder_action_name, idaapi.SETMENU_APP)
@@ -585,7 +589,7 @@ class myplugin_WPeChatGPT(idaapi.plugin_t):
                                                   'Try to generate Exploit',
                                                   expCreateHandler(),
                                                   "",
-                                                  '使用 gpt-3.5-turbo 尝试对漏洞函数生成EXP',
+                                                  "使用 %s 尝试对漏洞函数生成EXP"%(MODEL),
                                                   199)
             idaapi.register_action(expPython_action)
             idaapi.attach_action_to_menu(self.expPython_menu_path, self.expPython_action_name, idaapi.SETMENU_APP)
@@ -593,7 +597,7 @@ class myplugin_WPeChatGPT(idaapi.plugin_t):
             self.menu = ContextMenuHooks()
             self.menu.hook()
             print("Auto-WPeGPT v0.2 is ready.")
-            print("WPeChatGPT v2.4 works fine! :)@WPeace\n")
+            print("%s v2.4 works fine! :)@WPeace\n"%(PLUGIN_NAME))
         return idaapi.PLUGIN_KEEP
 
     def run(self, arg):
@@ -617,4 +621,4 @@ def PLUGIN_ENTRY():
         if not openai.api_key:
             print("未找到 API_KEY，请在脚本中填写 openai.api_key! :(@WPeace")
             raise ValueError("No valid OpenAI API key found")
-    return myplugin_WPeChatGPT()
+    return type(f"myplugin_{PLUGIN_NAME}", (myplugin_WPeChatGPT, ), dict())()
