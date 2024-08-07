@@ -7,12 +7,8 @@ import openai
 import re
 import threading
 import json
+import httpx
 import sys, os
-
-PLUGIN_NAME='WPEChatGPT'
-PROD_NAME='ChatGPT'
-MODEL = 'gpt-3.5-turbo'
-
 # Windows
 path = os.path.dirname(os.path.abspath(__file__)) + "\\Auto-WPeGPT_WPeace\\"
 # MacOS
@@ -22,14 +18,26 @@ import Auto_WPeGPT
 
 # Whether to use Chinese explanation code.
 ZH_CN = True
+# Plugin information, you can change the model here.
+PLUGIN_NAME = 'WPeChatGPT'
+PROD_NAME = 'ChatGPT'
+MODEL = 'gpt-4'
 # Set your API key here, or put in in the OPENAI_API_KEY environment variable.
-openai.api_key = "ENTER_OPEN_API_KEY_HERE"
-# Set your own proxy if necessary. (e.g. Clash)
-#print("WPeChatGPT has appointed the proxy.")
-#proxies = {'http': "http://127.0.0.1:7890", 'https': "http://127.0.0.1:7890"}
-#openai.proxy = proxies
-# Set reverse proxy URL if you need. (e.g. Azure)
-#openai.api_base = "base_url"
+openai_api_key = "ENTER_OPEN_API_KEY_HERE"
+
+# Set your forward-proxy if necessary. (e.g. Clash = http://127.0.0.1:7890)
+proxy = ""
+# Set reverse-proxy URL if you need. (e.g. Azure OpenAI)
+proxy_address = ""
+# Create openai client (python openai package version > 1.2)
+if proxy:
+    client = openai.OpenAI(http_client=httpx.Client(proxies=proxy, transport=httpx.HTTPTransport(local_address="0.0.0.0")), api_key=openai_api_key)
+    print("WPeChatGPT has appointed the forward-proxy.")
+elif proxy_address:
+    client = openai.OpenAI(base_url=proxy_address, api_key=openai_api_key)
+    print("WPeChatGPT has appointed the reverse-proxy.")
+else:
+    client = openai.OpenAI(api_key=openai_api_key)
 
 
 # WPeChatGPT 分析解释函数
@@ -203,7 +211,7 @@ def autoChatFunc(funcTree:str, strings:str, callback):
 
 def chat_api_worker(messages, model, callback):
     try:
-        response = openai.ChatCompletion.create(messages=messages, model=model)
+        response = client.chat.completions.create(messages=messages, model=model)
     except Exception as e:
         if "maximum context length" in str(e):
             print("此二进制文件的分析数据超过了 GPT-3.5-API 的最大长度！请期待后续版本 :)@WPeace")
@@ -274,14 +282,14 @@ def query_model(query, cb, max_tokens=2500):
     :param cb: Tu function to which the response will be passed to.
     """
     try:
-        response = openai.ChatCompletion.create(
+        response = client.chat.completions.create(
             model=MODEL,
             messages=[
                 {"role": "user", "content": query}
             ]
         )
-        ida_kernwin.execute_sync(functools.partial(cb, response=response.choices[0]["message"]["content"]), ida_kernwin.MFF_WRITE)
-    except openai.InvalidRequestError as e:
+        ida_kernwin.execute_sync(functools.partial(cb, response=response.choices[0].message.content), ida_kernwin.MFF_WRITE)
+    except openai.BadRequestError as e:
         # Context length exceeded. Determine the max number of tokens we can ask for and retry.
         m = re.search(r'maximum context length is (\d+) tokens, however you requested \d+ tokens \((\d+) in your '
                       r'prompt;', str(e))
@@ -317,7 +325,7 @@ def query_model_async(query, cb, time):
     """
     if time == 0:
         if ZH_CN:
-            print(f"正在发送 {PROD_NAME}-{MODEL} API 请求，完成后将输出提示。@WPeace")
+            print(f"正在发送 {PROD_NAME}:{MODEL} API 请求，完成后将输出提示。@WPeace")
         else:
             print(f"Sending {PROD_NAME}-{MODEL} API request, will output a prompt when completed. @WPeace")
         print("Request to %s sent..."%(MODEL))
@@ -537,7 +545,7 @@ class myplugin_WPeChatGPT(idaapi.plugin_t):
             self.menu = ContextMenuHooks()
             self.menu.hook()
             print("Auto-WPeGPT v0.2 is ready.")
-            print("%s v2.4 works fine! :)@WPeace\n"%(PLUGIN_NAME))
+            print("%s v2.5 works fine! :)@WPeace\n"%(PLUGIN_NAME))
         else:
             # create Auto-WPeGPT action
             autoWPeGPT_action = idaapi.action_desc_t(self.autoWPeGPT_action_name,
@@ -597,7 +605,7 @@ class myplugin_WPeChatGPT(idaapi.plugin_t):
             self.menu = ContextMenuHooks()
             self.menu.hook()
             print("Auto-WPeGPT v0.2 is ready.")
-            print("%s v2.4 works fine! :)@WPeace\n"%(PLUGIN_NAME))
+            print("%s v2.5 works fine! :)@WPeace\n"%(PLUGIN_NAME))
         return idaapi.PLUGIN_KEEP
 
     def run(self, arg):
