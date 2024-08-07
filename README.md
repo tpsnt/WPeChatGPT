@@ -24,6 +24,7 @@ ChatGPT's analysis results **for reference only**, otherwise we analysts would b
 |2.1|2023-03-07|Fix the timed out issue of OpenAI-API. (See section ***About OpenAI-API Error Reporting***)|
 |2.3|2023-04-23|Add the **Auto-WPeGPT v0.1** to support automatic analysis of binary files.<br>(Package *anytree* needs to be added from this version, use *requirements.txt* or *pip install anytree*)|
 |2.4|2023-11-10|1. Changed some display details.<br>2. Update **Auto-WPeGPT v0.2**.|
+|2.5|2024-08-07|1. Add support for other models, you can set this using the *MODEL* variable. @tpsnt<br>2. Support for the new version of the python openai package.|
 ## Install
 1. Run the following command to install the required packages.
 ```
@@ -90,19 +91,23 @@ After testing, the v0.1 version has a better analysis effect on files with fewer
 ## About OpenAI-API error reporting
 &emsp;&emsp;From March 2, 2023, I often encounter API errors, and I thought it was a problem of server instability (because I have ups and downs here), but because there are too many feedbacks that I have encountered related errors, so I I first went to OpenAI to check the API Status and found that it was running well, so I found that it might not be the server problem I thought, so I searched and debugged related problems. The following is how I dealt with the OpenAI API connection problem:
 
-&emsp;&emsp;First of all, the plug-in has been running under the conditions of **Scientific Online**.
+&emsp;&emsp;First of all, the plugin has been running under the conditions of **Scientific Online**.
 - Under the condition of scientific Internet access, if you find that the plug-in fails to connect to the API after many attempts, you need to check the urllib3 version of python (version 1.26 has a proxy problem).
     - You can use the following commands to perform a fallback fix for urllib3:
     ```
     pip uninstall urllib3
     pip install urllib3==1.25.11
     ```
-- If the urllib3 version is correct or there are still API access problems after reinstalling the 1.25 version, please download the latest version and specify a proxy for the plugin:
-    - Uncomment the following three lines of code, then fill in the proxy address and port information into the ***proxies*** variable:
+- You can set forward or reverse proxies for the plugin:
+    - Fill in the proxy address and port information into the ***proxy*** variable (forward-proxy):
     ```
-    #print("WPeChatGPT has appointed the proxy.")
-    #proxies = {'http': "http://127.0.0.1:7890", 'https': "http://127.0.0.1:7890"}
-    #openai.proxy = proxies
+    # Set your forward-proxy if necessary. (e.g. Clash = http://127.0.0.1:7890)
+    proxy = ""
+    ```
+    - Fill in the reverse-proxy-url into the ***proxy_address*** variable (reverse-proxy):
+    ```
+    # Set reverse-proxy URL if you need. (e.g. Azure OpenAI)
+    proxy_address = ""
     ```
 ## Contact me
 If you encounter problems or have any questions when using the plugin, please leave a message or send me an email.
